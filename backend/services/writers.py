@@ -97,6 +97,62 @@ Det är en långsiktig strategi som ger resultat. Vad tycker du - har du testat 
         except Exception as e:
             logger.error(f"Error writing personal post for {article.title}: {e}")
             return None
+
+    def write_blog_post(self, article: Article, config) -> Optional[str]:
+        """Write a blog post based on the article."""
+        if not self.client:
+            logger.error("OpenAI client not initialized - missing API key")
+            return None
+        
+        if self.client == "mock_client":
+            logger.info("Using mock OpenAI client - returning dummy blog post")
+            return f"""# {article.title}
+
+## Introduktion
+
+Community-building har blivit en av de mest kraftfulla strategierna för att förbättra SEO och bygga varumärke online. Denna artikel utforskar hur engagemang i communities kan ge långsiktiga fördelar för din digitala närvaro.
+
+## Huvudpoäng
+
+### 1. Bygg förtroende genom värde
+Istället för att fokusera på direkta försäljningsmeddelanden, bör du prioritera att hjälpa andra i dina communities. Detta bygger förtroende och positionerar dig som en expert inom ditt område.
+
+### 2. Skapa innehåll baserat på verkliga frågor
+Genom att vara aktiv i communities får du insikt i vilka frågor och problem som verkligen engagerar din målgrupp. Använd denna information för att skapa relevant och värdefullt innehåll.
+
+### 3. Naturliga länkar och rekommendationer
+När du etablerat dig som en pålitlig resurs i communities, kommer andra naturligt att länka till ditt innehåll och rekommendera dina tjänster.
+
+## Praktiska tips
+
+- **Engagera dig regelbundet**: Bli en aktiv deltagare, inte bara en observatör
+- **Ge mer än du tar**: Fokusera på att hjälpa andra först
+- **Var autentisk**: Dela din verkliga expertis och erfarenhet
+- **Följ upp**: Håll kontakten även efter initiala interaktioner
+
+## Slutsats
+
+Community-building är en långsiktig strategi som kräver tålamod och engagemang, men resultaten kan vara betydande. Genom att fokusera på att skapa värde för andra, bygger du inte bara din SEO utan också ett starkt varumärke och nätverk.
+
+*Vill du läsa mer om community-building och SEO? Läs den ursprungliga artikeln här: {article.url}*
+
+---
+
+**Taggar:** SEO, Community Building, Digital Marketing, Content Strategy"""
+        
+        try:
+            system_prompt = config.prompts.get("writer_blog_system", "")
+            user_prompt = config.prompts.get("writer_blog_user_template", "").format(
+                title=article.title,
+                content=article.content or ""
+            )
+            
+            response = self._call_openai(system_prompt, user_prompt, config.model)
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error writing blog post for {article.title}: {e}")
+            return None
     
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     def _call_openai(self, system_prompt: str, user_prompt: str, model: str) -> Optional[str]:

@@ -46,6 +46,7 @@ class RunItem(BaseModel):
     score_result: Optional[ScoreResult] = None
     linkedin_article: Optional[str] = None
     personal_post: Optional[str] = None
+    blog_post: Optional[str] = None
     status: str = Field(..., description="'kept', 'skipped', 'filtered'")
     reason: str = ""
 

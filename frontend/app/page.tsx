@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Play, Eye, EyeOff, ExternalLink, FileText, Users, User } from 'lucide-react'
+import { Play, Eye, EyeOff, ExternalLink, FileText, Users, User, BookOpen } from 'lucide-react'
 
 interface RunResponse {
   kept_count: number
@@ -37,6 +37,7 @@ interface RunItem {
   }
   linkedin_article?: string
   personal_post?: string
+  blog_post?: string
   status: string
   reason: string
 }
@@ -51,7 +52,7 @@ export default function Dashboard() {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [statusMessage, setStatusMessage] = useState('')
   const [progress, setProgress] = useState<{current: number, total: number} | null>(null)
-  const [activeView, setActiveView] = useState<{[key: number]: 'original' | 'linkedin' | 'personal'}>({})
+  const [activeView, setActiveView] = useState<{[key: number]: 'original' | 'linkedin' | 'personal' | 'blog'}>({})
 
   useEffect(() => {
     // Load available feeds
@@ -140,11 +141,11 @@ export default function Dashboard() {
     setExpandedItems(newExpanded)
   }
 
-  const setView = (index: number, view: 'original' | 'linkedin' | 'personal') => {
+  const setView = (index: number, view: 'original' | 'linkedin' | 'personal' | 'blog') => {
     setActiveView(prev => ({ ...prev, [index]: view }))
   }
 
-  const getCurrentView = (index: number): 'original' | 'linkedin' | 'personal' => {
+  const getCurrentView = (index: number): 'original' | 'linkedin' | 'personal' | 'blog' => {
     return activeView[index] || 'original'
   }
 
@@ -372,6 +373,17 @@ export default function Dashboard() {
                             Personligt Inlägg
                           </Button>
                         )}
+                        {item.blog_post && (
+                          <Button
+                            variant={getCurrentView(index) === 'blog' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setView(index, 'blog')}
+                            className="flex items-center gap-2"
+                          >
+                            <BookOpen className="h-4 w-4" />
+                            Blogginlägg
+                          </Button>
+                        )}
                       </div>
                       
                       {/* Content Display */}
@@ -406,12 +418,23 @@ export default function Dashboard() {
                           </div>
                         )}
                         
+                        {getCurrentView(index) === 'blog' && item.blog_post && (
+                          <div>
+                            <div className="mb-2 text-purple-600 font-medium">📝 Blogginlägg</div>
+                            <div>{item.blog_post}</div>
+                          </div>
+                        )}
+                        
                         {getCurrentView(index) === 'linkedin' && !item.linkedin_article && (
                           <div className="text-gray-500 italic">Ingen LinkedIn artikel genererad</div>
                         )}
                         
                         {getCurrentView(index) === 'personal' && !item.personal_post && (
                           <div className="text-gray-500 italic">Inget personligt inlägg genererat</div>
+                        )}
+                        
+                        {getCurrentView(index) === 'blog' && !item.blog_post && (
+                          <div className="text-gray-500 italic">Inget blogginlägg genererat</div>
                         )}
                       </div>
                     </div>

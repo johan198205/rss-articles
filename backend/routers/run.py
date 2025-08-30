@@ -129,15 +129,17 @@ async def run_pipeline(
                 # Generate content if keeping
                 linkedin_article = None
                 personal_post = None
+                blog_post = None
                 
                 if score_result.keep:
                     linkedin_article = writers.write_linkedin_article(article, config)
                     personal_post = writers.write_personal_post(article, config)
+                    blog_post = writers.write_blog_post(article, config)
                     
                     # Write to Notion if not dry run
                     if not dry_run and linkedin_article and personal_post:
                         success = notion_writer.write_article(
-                            article, score_result, linkedin_article, personal_post
+                            article, score_result, linkedin_article, personal_post, blog_post
                         )
                         if success:
                             dedupe_store.mark_processed(article.url, article.title)
@@ -150,6 +152,7 @@ async def run_pipeline(
                     score_result=score_result,
                     linkedin_article=linkedin_article,
                     personal_post=personal_post,
+                    blog_post=blog_post,
                     status="kept" if score_result.keep else "skipped",
                     reason=score_result.reason_short
                 )

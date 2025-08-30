@@ -18,7 +18,7 @@ class NotionWriter:
             self.database_id = settings.notion_database_id
     
     def write_article(self, article: Article, score_result: ScoreResult, 
-                     linkedin_article: str, personal_post: str) -> bool:
+                     linkedin_article: str, personal_post: str, blog_post: str = None) -> bool:
         """Write article to Notion database."""
         if not self.client:
             logger.error("Notion client not initialized - missing API key or database ID")
@@ -117,6 +117,39 @@ class NotionWriter:
                     }
                 }
             ]
+            
+            # Add blog post section if available
+            if blog_post:
+                blocks.extend([
+                    {
+                        "object": "block",
+                        "type": "heading_2",
+                        "heading_2": {
+                            "rich_text": [
+                                {
+                                    "type": "text",
+                                    "text": {
+                                        "content": "Blogginlägg"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "object": "block",
+                        "type": "paragraph",
+                        "paragraph": {
+                            "rich_text": [
+                                {
+                                    "type": "text",
+                                    "text": {
+                                        "content": blog_post
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ])
             
             # Create page
             response = self.client.pages.create(
