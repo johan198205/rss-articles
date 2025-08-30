@@ -1,18 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
-import { Upload, Download, Save, CheckCircle } from 'lucide-react'
 
 interface FeedRule {
   feed_url: string
   label: string
+  source: string
+  language: string
   topic_default: string
+  enabled: boolean
+}
+
+interface GlobalRules {
   include_any: string[]
   include_all: string[]
   exclude_any: string[]
@@ -20,25 +19,61 @@ interface FeedRule {
   max_age_days: number
   language: string
   source_weight: number
-  enabled: boolean
 }
 
 export default function FeedsPage() {
   const [feeds, setFeeds] = useState<FeedRule[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [globalRules, setGlobalRules] = useState<GlobalRules>({
+    include_any: [],
+    include_all: [],
+    exclude_any: [],
+    min_words: 200,
+    max_age_days: 10,
+    language: '',
+    source_weight: 1.0
+  })
   const [message, setMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     loadFeeds()
+    loadGlobalRules()
   }, [])
 
   const loadFeeds = async () => {
     try {
-      const response = await fetch('/api/feeds/')
+      const response = await fetch('http://localhost:8000/api/feeds/')
       const data = await response.json()
-      setFeeds(data)
+      // Extract only feed-specific data
+      const feedData = data.map((feed: any) => ({
+        feed_url: feed.feed_url,
+        label: feed.label,
+        source: feed.source || '',
+        language: feed.language || '',
+        topic_default: feed.topic_default,
+        enabled: feed.enabled
+      }))
+      setFeeds(feedData)
     } catch (error) {
-      console.error('Failed to load feeds:', error)
+      setMessage(`❌ Failed to load feeds: ${error}`)
+    }
+  }
+
+  const loadGlobalRules = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/config/')
+      const config = await response.json()
+      setGlobalRules({
+        include_any: config.defaults.include_any || [],
+        include_all: config.defaults.include_all || [],
+        exclude_any: config.defaults.exclude_any || [],
+        min_words: config.defaults.min_words || 200,
+        max_age_days: config.defaults.max_age_days || 10,
+        language: config.defaults.language || '',
+        source_weight: config.defaults.source_weight || 1.0
+      })
+    } catch (error) {
+      console.error('Failed to load global rules:', error)
     }
   }
 
@@ -51,208 +86,335 @@ export default function FeedsPage() {
     formData.append('file', file)
 
     try {
-      const response = await fetch('/api/feeds/upload', {
+      const response = await fetch('http://localhost:8000/api/feeds/upload', {
         method: 'POST',
         body: formData,
       })
-      const result = await response.json()
-      setMessage(`Successfully uploaded ${result.count} feeds`)
-      loadFeeds()
+      
+      if (response.ok) {
+        const result = await response.json()
+        setMessage(`✅ Successfully uploaded ${result.count} feeds`)
+        loadFeeds() // Reload feeds
+      } else {
+        const error = await response.text()
+        setMessage(`❌ Upload failed: ${error}`)
+      }
     } catch (error) {
-      setMessage('Upload failed')
+      setMessage(`❌ Upload failed: ${error}`)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const exportFeeds = async () => {
-    try {
-      const response = await fetch('/api/feeds/export')
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = 'feeds.xlsx'
-      a.click()
-    } catch (error) {
-      console.error('Export failed:', error)
-    }
-  }
-
-  const saveFeeds = async () => {
-    setIsLoading(true)
-    try {
-      const response = await fetch('/api/config/', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ feeds }),
-      })
-      setMessage('Feeds saved successfully')
-    } catch (error) {
-      setMessage('Save failed')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const updateFeed = (index: number, field: keyof FeedRule, value: any) => {
+  const updateFeed = async (index: number, field: keyof FeedRule, value: any) => {
     const updatedFeeds = [...feeds]
     updatedFeeds[index] = { ...updatedFeeds[index], [field]: value }
     setFeeds(updatedFeeds)
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Feeds</h1>
-        <div className="flex gap-2">
-          <Button onClick={exportFeeds} variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Exportera Excel
-          </Button>
-          <Button onClick={saveFeeds} disabled={isLoading}>
-            <Save className="h-4 w-4 mr-2" />
-            Spara ändringar
-          </Button>
-        </div>
-      </div>
+  const updateGlobalRule = (field: keyof GlobalRules, value: any) => {
+    setGlobalRules({ ...globalRules, [field]: value })
+  }
 
+  const saveAll = async () => {
+    setIsLoading(true)
+    try {
+      // First save global rules to config defaults
+      const configResponse = await fetch('http://localhost:8000/api/config/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          min_words: globalRules.min_words,
+          max_age_days: globalRules.max_age_days,
+          language: globalRules.language,
+          include_any: globalRules.include_any.join(','),
+          include_all: globalRules.include_all.join(','),
+          exclude_any: globalRules.exclude_any.join(',')
+        }),
+      })
+
+      if (!configResponse.ok) {
+        throw new Error('Failed to save global rules')
+      }
+
+      // Then save feeds with global rules applied
+      const feedsWithRules = feeds.map(feed => ({
+        ...feed,
+        include_any: globalRules.include_any,
+        include_all: globalRules.include_all,
+        exclude_any: globalRules.exclude_any,
+        min_words: globalRules.min_words,
+        max_age_days: globalRules.max_age_days,
+        language: globalRules.language,
+        source_weight: globalRules.source_weight
+      }))
+
+      const feedsResponse = await fetch('http://localhost:8000/api/config/', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ feeds: feedsWithRules }),
+      })
+      
+      if (feedsResponse.ok) {
+        setMessage('✅ All settings saved successfully')
+      } else {
+        setMessage('❌ Save failed')
+      }
+    } catch (error) {
+      setMessage(`❌ Save failed: ${error}`)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const addNewFeed = () => {
+    const newFeed: FeedRule = {
+      feed_url: '',
+      label: '',
+      source: '',
+      language: '',
+      topic_default: 'Generativ AI',
+      enabled: true
+    }
+    setFeeds([...feeds, newFeed])
+  }
+
+  const deleteFeed = (index: number) => {
+    const updatedFeeds = feeds.filter((_, i) => i !== index)
+    setFeeds(updatedFeeds)
+  }
+
+  return (
+    <div className="p-8">
+      <h1 className="text-3xl font-bold mb-6">Feeds</h1>
+      
       {message && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <span className="text-green-800">{message}</span>
+        <div className={`p-4 mb-6 rounded ${
+          message.includes('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}>
+          {message}
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Ladda upp Excel</CardTitle>
-          <CardDescription>
-            Ladda upp en Excel-fil med feed-regler. Kolumnerna ska vara: feed_url, label, topic_default, include_any, include_all, exclude_any, min_words, max_age_days, language, source_weight, enabled
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <Input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileUpload}
-              disabled={isLoading}
-            />
-            <Upload className="h-4 w-4" />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Upload Section */}
+      <div className="mb-8 p-6 border rounded-lg">
+        <h2 className="text-xl font-semibold mb-4">Ladda upp Excel</h2>
+        <p className="mb-4">
+          Din Excel ska ha dessa kolumner:
+        </p>
+        <ul className="list-disc list-inside mb-4 text-sm text-gray-600">
+          <li><strong>Källa</strong> → feed_url</li>
+          <li><strong>Beskrivning</strong> → label</li>
+          <li><strong>RSS URL</strong> → feed_url (samma som Källa)</li>
+          <li><strong>Språk</strong> → language</li>
+        </ul>
+        
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleFileUpload}
+          disabled={isLoading}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+        />
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Feed-regler</CardTitle>
-          <CardDescription>
-            Redigera feed-regler nedan. Ändringar sparas inte automatiskt.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {feeds.map((feed, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{feed.label}</h3>
-                  <div className="flex items-center gap-2">
-                    <Switch
+      {/* Global Rules Section */}
+      <div className="mb-8 p-6 border rounded-lg bg-gray-50">
+        <h2 className="text-xl font-semibold mb-4">Globala regler (gäller alla feeds)</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Min ord</label>
+            <input
+              type="number"
+              value={globalRules.min_words}
+              onChange={(e) => updateGlobalRule('min_words', parseInt(e.target.value))}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1">Max ålder (dagar)</label>
+            <input
+              type="number"
+              value={globalRules.max_age_days}
+              onChange={(e) => updateGlobalRule('max_age_days', parseInt(e.target.value))}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1">Språk</label>
+            <input
+              type="text"
+              value={globalRules.language}
+              onChange={(e) => updateGlobalRule('language', e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="sv, en, eller tom"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1">Källvikt (0.0-2.0)</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="2"
+              value={globalRules.source_weight}
+              onChange={(e) => updateGlobalRule('source_weight', parseFloat(e.target.value))}
+              className="w-full p-2 border rounded"
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Inkludera någon av (kommaseparerat)</label>
+            <input
+              type="text"
+              value={globalRules.include_any.join(', ')}
+              onChange={(e) => updateGlobalRule('include_any', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+              className="w-full p-2 border rounded"
+              placeholder="AI, machine learning"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Inkludera alla (kommaseparerat)</label>
+            <input
+              type="text"
+              value={globalRules.include_all.join(', ')}
+              onChange={(e) => updateGlobalRule('include_all', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+              className="w-full p-2 border rounded"
+              placeholder="artificial intelligence"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Exkludera någon av (kommaseparerat)</label>
+            <input
+              type="text"
+              value={globalRules.exclude_any.join(', ')}
+              onChange={(e) => updateGlobalRule('exclude_any', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+              className="w-full p-2 border rounded"
+              placeholder="sponsor, advertisement"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Feed Management */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">Feeds ({feeds.length})</h2>
+          <div className="space-x-2">
+            <button
+              onClick={addNewFeed}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+            >
+              + Lägg till feed
+            </button>
+            <button
+              onClick={saveAll}
+              disabled={isLoading}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+            >
+              {isLoading ? 'Sparar...' : 'Spara alla'}
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {feeds.map((feed, index) => (
+            <div key={index} className="border rounded-lg p-4">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="font-medium">
+                  {feed.label || `Feed ${index + 1}`}
+                </h3>
+                <div className="flex items-center space-x-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
                       checked={feed.enabled}
-                      onCheckedChange={(checked) => updateFeed(index, 'enabled', checked)}
+                      onChange={(e) => updateFeed(index, 'enabled', e.target.checked)}
+                      className="mr-2"
                     />
-                    <Badge variant={feed.enabled ? 'default' : 'secondary'}>
-                      {feed.enabled ? 'Aktiverad' : 'Inaktiverad'}
-                    </Badge>
-                  </div>
+                    Aktiverad
+                  </label>
+                  <button
+                    onClick={() => deleteFeed(index)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    Ta bort
+                  </button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">RSS URL</label>
+                  <input
+                    type="text"
+                    value={feed.feed_url}
+                    onChange={(e) => updateFeed(index, 'feed_url', e.target.value)}
+                    className="w-full p-2 border rounded"
+                    placeholder="https://example.com/rss"
+                  />
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Beskrivning</label>
+                  <input
+                    type="text"
+                    value={feed.label}
+                    onChange={(e) => updateFeed(index, 'label', e.target.value)}
+                    className="w-full p-2 border rounded"
+                    placeholder="Feed beskrivning"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Källa</label>
+                  <input
+                    type="text"
+                    value={feed.source}
+                    onChange={(e) => updateFeed(index, 'source', e.target.value)}
+                    className="w-full p-2 border rounded"
+                    placeholder="Källnamn"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium mb-1">Språk</label>
+                  <input
+                    type="text"
+                    value={feed.language}
+                    onChange={(e) => updateFeed(index, 'language', e.target.value)}
+                    className="w-full p-2 border rounded"
+                    placeholder="sv, en, etc."
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label>Feed URL</Label>
-                    <Input
-                      value={feed.feed_url}
-                      onChange={(e) => updateFeed(index, 'feed_url', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label>Standardämne</Label>
+                    <label className="block text-sm font-medium mb-1">Standardämne</label>
                     <select
                       value={feed.topic_default}
                       onChange={(e) => updateFeed(index, 'topic_default', e.target.value)}
-                      className="w-full h-10 px-3 py-2 border border-input bg-background rounded-md"
+                      className="w-full p-2 border rounded"
                     >
                       <option value="SEO & AI visibility">SEO & AI visibility</option>
                       <option value="Webbanalys & AI">Webbanalys & AI</option>
                       <option value="Generativ AI">Generativ AI</option>
                     </select>
                   </div>
-                  <div>
-                    <Label>Min ord</Label>
-                    <Input
-                      type="number"
-                      value={feed.min_words}
-                      onChange={(e) => updateFeed(index, 'min_words', parseInt(e.target.value))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Max ålder (dagar)</Label>
-                    <Input
-                      type="number"
-                      value={feed.max_age_days}
-                      onChange={(e) => updateFeed(index, 'max_age_days', parseInt(e.target.value))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Språk</Label>
-                    <Input
-                      value={feed.language}
-                      onChange={(e) => updateFeed(index, 'language', e.target.value)}
-                      placeholder="sv, en, eller tom"
-                    />
-                  </div>
-                  <div>
-                    <Label>Källvikt (0.0-2.0)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="2"
-                      value={feed.source_weight}
-                      onChange={(e) => updateFeed(index, 'source_weight', parseFloat(e.target.value))}
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Inkludera någon av (kommaseparerat)</Label>
-                    <Input
-                      value={feed.include_any.join(', ')}
-                      onChange={(e) => updateFeed(index, 'include_any', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Inkludera alla (kommaseparerat)</Label>
-                    <Input
-                      value={feed.include_all.join(', ')}
-                      onChange={(e) => updateFeed(index, 'include_all', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Exkludera någon av (kommaseparerat)</Label>
-                    <Input
-                      value={feed.exclude_any.join(', ')}
-                      onChange={(e) => updateFeed(index, 'exclude_any', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
-                    />
-                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

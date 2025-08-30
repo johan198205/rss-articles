@@ -7,13 +7,14 @@ class FeedRule(BaseModel):
     """Feed rule configuration."""
     feed_url: str
     label: str
+    source: str = ""
+    language: str = ""
     topic_default: str = Field(..., description="One of: 'SEO & AI visibility', 'Webbanalys & AI', 'Generativ AI'")
     include_any: List[str] = Field(default_factory=list)
     include_all: List[str] = Field(default_factory=list)
     exclude_any: List[str] = Field(default_factory=list)
     min_words: int = 200
     max_age_days: int = 10
-    language: str = ""
     source_weight: float = Field(ge=0.0, le=2.0, default=1.0)
     enabled: bool = True
 

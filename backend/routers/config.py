@@ -16,9 +16,16 @@ async def get_config():
         raise HTTPException(status_code=500, detail=f"Failed to load config: {str(e)}")
 
 @router.put("/", response_model=ConfigModel)
-async def update_config(config: ConfigModel):
+async def update_config(config_data: dict):
     """Update entire configuration."""
     try:
+        # Handle both ConfigModel and dict input
+        if isinstance(config_data, dict):
+            # Convert dict to ConfigModel
+            config = ConfigModel(**config_data)
+        else:
+            config = config_data
+        
         config_store.save(config)
         return config_store.load()
     except Exception as e:
@@ -39,7 +46,10 @@ async def update_settings(
     importance_threshold: float = None,
     min_words: int = None,
     max_age_days: int = None,
-    language: str = None
+    language: str = None,
+    include_any: str = None,
+    include_all: str = None,
+    exclude_any: str = None
 ):
     """Update model, threshold, and defaults."""
     try:
@@ -51,7 +61,7 @@ async def update_settings(
         if importance_threshold is not None:
             updates['threshold'] = {"importance": importance_threshold}
         
-        if any(x is not None for x in [min_words, max_age_days, language]):
+        if any(x is not None for x in [min_words, max_age_days, language, include_any, include_all, exclude_any]):
             defaults = {}
             if min_words is not None:
                 defaults['min_words'] = min_words
@@ -59,6 +69,12 @@ async def update_settings(
                 defaults['max_age_days'] = max_age_days
             if language is not None:
                 defaults['language'] = language
+            if include_any is not None:
+                defaults['include_any'] = include_any.split(',') if include_any else []
+            if include_all is not None:
+                defaults['include_all'] = include_all.split(',') if include_all else []
+            if exclude_any is not None:
+                defaults['exclude_any'] = exclude_any.split(',') if exclude_any else []
             updates['defaults'] = defaults
         
         config_store.update_settings(**updates)

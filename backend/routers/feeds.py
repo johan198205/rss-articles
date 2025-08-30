@@ -30,46 +30,86 @@ async def upload_feeds_excel(file: UploadFile = File(...)):
         content = await file.read()
         df = pd.read_excel(io.BytesIO(content))
         
+        # Debug: Log original columns
+        print(f"DEBUG: Original columns: {list(df.columns)}")
+        print(f"DEBUG: First few rows:")
+        print(df.head())
+        
+        # Map column names (handle different naming conventions)
+        column_mapping = {
+            'Källa': 'source',
+            'RSS URL': 'feed_url', 
+            'Beskrivning': 'label',
+            'Språk': 'language',
+            'feed_url': 'feed_url',
+            'label': 'label',
+            'source': 'source',
+            'topic_default': 'topic_default',
+            'language': 'language'
+        }
+        
+        # Rename columns if needed
+        df = df.rename(columns=column_mapping)
+        
+        # Debug: Log after mapping
+        print(f"DEBUG: After mapping columns: {list(df.columns)}")
+        if 'source' in df.columns:
+            print(f"DEBUG: Source column values: {df['source'].head().tolist()}")
+        else:
+            print("DEBUG: No 'source' column found after mapping")
+        
         # Validate required columns
-        required_columns = ['feed_url', 'label', 'topic_default']
+        required_columns = ['feed_url', 'label']
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Missing required columns: {missing_columns}"
+                detail=f"Missing required columns: {missing_columns}. Found columns: {list(df.columns)}"
             )
         
         # Convert to FeedRule objects
         feeds = []
-        for _, row in df.iterrows():
+        for index, row in df.iterrows():
             try:
+                # Convert row to dict to avoid pandas Series issues
+                row_dict = row.to_dict()
+                
                 # Parse comma-separated lists
-                include_any = _parse_list_field(row.get('include_any', ''))
-                include_all = _parse_list_field(row.get('include_all', ''))
-                exclude_any = _parse_list_field(row.get('exclude_any', ''))
+                include_any = _parse_list_field(row_dict.get('include_any', ''))
+                include_all = _parse_list_field(row_dict.get('include_all', ''))
+                exclude_any = _parse_list_field(row_dict.get('exclude_any', ''))
+                
+                # Clean up values
+                def clean_value(value):
+                    if pd.isna(value) or value is None or value == '':
+                        return ''
+                    return str(value).strip()
                 
                 feed = FeedRule(
-                    feed_url=str(row['feed_url']),
-                    label=str(row['label']),
-                    topic_default=str(row['topic_default']),
+                    feed_url=clean_value(row_dict['feed_url']),
+                    label=clean_value(row_dict['label']),
+                    source=clean_value(row_dict.get('source', '')),
+                    language=clean_value(row_dict.get('language', '')),
+                    topic_default=clean_value(row_dict.get('topic_default', 'Generativ AI')),
                     include_any=include_any,
                     include_all=include_all,
                     exclude_any=exclude_any,
-                    min_words=int(row.get('min_words', 200)),
-                    max_age_days=int(row.get('max_age_days', 10)),
-                    language=str(row.get('language', '')),
-                    source_weight=float(row.get('source_weight', 1.0)),
-                    enabled=bool(row.get('enabled', True))
+                    min_words=int(clean_value(row_dict.get('min_words', 200))) if clean_value(row_dict.get('min_words', 200)) else 200,
+                    max_age_days=int(clean_value(row_dict.get('max_age_days', 10))) if clean_value(row_dict.get('max_age_days', 10)) else 10,
+                    source_weight=float(clean_value(row_dict.get('source_weight', 1.0))) if clean_value(row_dict.get('source_weight', 1.0)) else 1.0,
+                    enabled=bool(clean_value(row_dict.get('enabled', True))) if clean_value(row_dict.get('enabled', True)) else True
                 )
                 feeds.append(feed)
             except Exception as e:
                 raise HTTPException(
                     status_code=400, 
-                    detail=f"Error parsing row {len(feeds) + 1}: {str(e)}"
+                    detail=f"Error parsing row {index + 1}: {str(e)}"
                 )
         
         # Update configuration
-        config_store.update_feeds(feeds)
+        config = config_store.load()
+        config.feeds = feeds
+        config_store.save(config)
         
         return {
             "message": f"Successfully uploaded {len(feeds)} feed rules",
@@ -93,13 +133,14 @@ async def export_feeds_excel():
             data.append({
                 'feed_url': feed.feed_url,
                 'label': feed.label,
+                'source': feed.source,
+                'language': feed.language,
                 'topic_default': feed.topic_default,
                 'include_any': ','.join(feed.include_any),
                 'include_all': ','.join(feed.include_all),
                 'exclude_any': ','.join(feed.exclude_any),
                 'min_words': feed.min_words,
                 'max_age_days': feed.max_age_days,
-                'language': feed.language,
                 'source_weight': feed.source_weight,
                 'enabled': feed.enabled
             })
@@ -175,6 +216,6 @@ async def validate_feeds():
 
 def _parse_list_field(value) -> List[str]:
     """Parse comma-separated string to list, handling empty values."""
-    if pd.isna(value) or value == '':
+    if pd.isna(value) or value == '' or value is None:
         return []
     return [item.strip() for item in str(value).split(',') if item.strip()]

@@ -47,8 +47,8 @@ class ConfigStore:
         data = config.model_dump()
         
         # Convert FeedRule objects to dicts
-        if 'feeds' in data:
-            data['feeds'] = [feed.model_dump() for feed in data['feeds']]
+        if 'feeds' in data and data['feeds']:
+            data['feeds'] = [feed.model_dump() if hasattr(feed, 'model_dump') else feed for feed in data['feeds']]
         
         with open(self.config_path, 'w', encoding='utf-8') as f:
             yaml.dump(data, f, default_flow_style=False, allow_unicode=True)
