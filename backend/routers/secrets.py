@@ -107,12 +107,13 @@ async def _test_notion() -> SecretTestResponse:
         return SecretTestResponse(ok=False, message="Notion database ID not set")
     
     try:
-        client = Client(auth=settings.notion_api_key)
+        from services.notion_write import NotionWriter
         
-        # Try to retrieve database
-        response = client.databases.retrieve(database_id=settings.notion_database_id)
+        # Use NotionWriter's test function
+        notion_writer = NotionWriter()
+        success, message = notion_writer.test_connection()
         
-        return SecretTestResponse(ok=True, message="Notion connection successful")
+        return SecretTestResponse(ok=success, message=message)
         
     except Exception as e:
         return SecretTestResponse(ok=False, message=f"Notion test failed: {str(e)}")

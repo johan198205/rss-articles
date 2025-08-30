@@ -34,7 +34,7 @@ class NotionWriter:
             
             # Create page properties
             properties = {
-                "Title": {
+                "Titel": {
                     "title": [
                         {
                             "text": {
@@ -43,18 +43,16 @@ class NotionWriter:
                         }
                     ]
                 },
-                "Ämne": {
-                    "select": {
-                        "name": score_result.topic
-                    }
+                "URL": {
+                    "url": article.url
                 },
-                "Datum": {
+                "Publicerad": {
                     "date": {
                         "start": date_value.strftime("%Y-%m-%d")
                     }
                 },
-                "Källa": {
-                    "url": article.url
+                "Vikt": {
+                    "number": score_result.importance
                 }
             }
             
@@ -173,7 +171,20 @@ class NotionWriter:
         try:
             # Try to retrieve database properties
             response = self.client.databases.retrieve(database_id=self.database_id)
-            return True, f"Connected to database: {response.get('title', [{}])[0].get('plain_text', 'Unknown')}"
+            db_title = response.get('title', [{}])[0].get('plain_text', 'Unknown')
+            
+            # Get available properties
+            properties = response.get('properties', {})
+            available_props = list(properties.keys())
+            
+            # Check required properties
+            required_props = ["Titel", "URL", "Publicerad", "Vikt"]
+            missing_props = [prop for prop in required_props if prop not in available_props]
+            
+            if missing_props:
+                return False, f"Missing properties: {missing_props}. Available: {available_props}"
+            
+            return True, f"Connected to database: {db_title}. Properties: {available_props}"
             
         except Exception as e:
             return False, f"Connection failed: {str(e)}"
