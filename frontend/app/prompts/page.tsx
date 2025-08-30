@@ -15,6 +15,8 @@ interface Config {
     writer_linkedin_user_template: string
     writer_personal_system: string
     writer_personal_user_template: string
+    writer_blog_system: string
+    writer_blog_user_template: string
   }
 }
 
@@ -29,7 +31,7 @@ export default function PromptsPage() {
 
   const loadConfig = async () => {
     try {
-      const response = await fetch('/api/config/')
+      const response = await fetch('http://localhost:8000/api/config/')
       const data = await response.json()
       setConfig(data)
     } catch (error) {
@@ -42,7 +44,7 @@ export default function PromptsPage() {
     
     setIsLoading(true)
     try {
-      const response = await fetch('/api/config/prompts', {
+      const response = await fetch('http://localhost:8000/api/config/prompts', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config.prompts),
@@ -184,6 +186,40 @@ export default function PromptsPage() {
             value={config.prompts.writer_personal_user_template}
             onChange={(e) => updatePrompt('writer_personal_user_template', e.target.value)}
             rows={10}
+            className="font-mono text-sm"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Blogg - System</CardTitle>
+          <CardDescription>
+            Systemprompt för att skriva bloggartiklar
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={config.prompts.writer_blog_system}
+            onChange={(e) => updatePrompt('writer_blog_system', e.target.value)}
+            rows={3}
+            className="font-mono text-sm"
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Blogg - Användar-mall</CardTitle>
+          <CardDescription>
+            Mall för bloggartikel med variabler: title, content. Inkluderar SEO-krav och struktur.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Textarea
+            value={config.prompts.writer_blog_user_template}
+            onChange={(e) => updatePrompt('writer_blog_user_template', e.target.value)}
+            rows={15}
             className="font-mono text-sm"
           />
         </CardContent>

@@ -124,6 +124,27 @@ KRAV:
 - Avsluta med en engagerande fråga/CTA
 Titel: {title}
 Innehåll:
+{content}""",
+        "writer_blog_system": "Du skriver på flytande svenska i en informativ och engagerande ton för blogginnehåll.",
+        "writer_blog_user_template": """Skriv en bloggartikel på svenska baserat på artikeln.
+STRUKTUR:
+- Rubrik (SEO-optimerad och lockande)
+- Meta-beskrivning (150-160 tecken)
+- Inledning (hook och problemformulering)
+- Huvudinnehåll (3-5 sektioner med underrubriker)
+- Praktiska tips/insikter
+- Slutsats med call-to-action
+- Relevanta nyckelord integrerade naturligt
+
+SEO-KRAV:
+- Minst 1000 ord
+- Underrubriker (H2, H3)
+- Punktlistor och numrerade listor
+- Inre länkar (markera med [LÄNK: beskrivning])
+- Läsbarhet: korta stycken, meningar under 20 ord
+
+Titel: {title}
+Innehåll:
 {content}"""
     })
 
