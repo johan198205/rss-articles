@@ -32,42 +32,47 @@ class ContentWriters:
         if self.client == "mock_client":
             logger.info("Using mock OpenAI client - returning dummy LinkedIn article")
             
-            # Extract key topics from title for more relevant content
-            title_lower = article.title.lower()
-            if 'seo' in title_lower or 'search' in title_lower:
-                topic = "SEO"
-                insights = ["Sökoptimerad innehållsstrategi", "Teknisk SEO-förbättring", "Användarupplevelse och ranking"]
-                hashtags = "#SEO #DigitalMarketing #Sökmotoroptimering"
-            elif 'ai' in title_lower or 'artificial' in title_lower:
-                topic = "AI"
-                insights = ["AI-driven automatisering", "Maskininlärning för effektivitet", "Framtida AI-trender"]
-                hashtags = "#AI #ArtificialIntelligence #Innovation"
-            elif 'analytics' in title_lower or 'data' in title_lower:
-                topic = "Analys"
-                insights = ["Datadriven beslutsfattande", "KPI-mätning och optimering", "Insikter från användaranalys"]
-                hashtags = "#Analytics #Data #Insights"
-            else:
-                topic = "Digital marknadsföring"
-                insights = ["Strategisk marknadsföring", "Kundengagemang och konvertering", "Digital transformation"]
-                hashtags = "#DigitalMarketing #Strategy #Growth"
+            # Generate unique content based on article title hash
+            title_hash = hash(article.title) % 1000
+            title_words = article.title.split()[:3]  # First 3 words for uniqueness
+            
+            # Create unique insights based on title hash
+            insight_templates = [
+                ["Förbättrad användarupplevelse", "Teknisk optimering", "Innehållsstrategi"],
+                ["Datadriven analys", "Automatisering av processer", "Kundengagemang"],
+                ["Innovation och trender", "Konverteringsoptimering", "Marknadsföringsstrategi"],
+                ["SEO-förbättringar", "AI-integration", "Performance-mätning"],
+                ["Brand building", "Content marketing", "Digital transformation"]
+            ]
+            
+            insights = insight_templates[title_hash % len(insight_templates)]
+            
+            # Generate unique hashtags based on title
+            base_hashtags = ["#DigitalMarketing", "#Innovation", "#Strategy"]
+            if any(word.lower() in article.title.lower() for word in ['seo', 'search']):
+                base_hashtags = ["#SEO", "#Sökmotoroptimering", "#DigitalMarketing"]
+            elif any(word.lower() in article.title.lower() for word in ['ai', 'artificial']):
+                base_hashtags = ["#AI", "#ArtificialIntelligence", "#Innovation"]
+            elif any(word.lower() in article.title.lower() for word in ['analytics', 'data']):
+                base_hashtags = ["#Analytics", "#Data", "#Insights"]
             
             return f"""# {article.title}
 
 ## Inledning
-{article.title} belyser viktiga aspekter inom {topic.lower()}. Denna artikel ger praktiska insikter för att förbättra din digitala närvaro.
+{article.title} ger oss viktiga insikter om dagens digitala utmaningar. Denna artikel belyser trender som påverkar hur vi arbetar med digital marknadsföring.
 
 ## Huvudinnehåll
-Baserat på artikeln "{article.title}" kan vi dra flera viktiga slutsatser om hur {topic.lower()} påverkar dagens digitala landskap.
+Baserat på "{article.title}" ser vi tydliga tecken på att marknaden förändras snabbt. Detta skapar både möjligheter och utmaningar för företag som vill förbättra sin digitala närvaro.
 
 ## Viktiga insikter
-- {insights[0]}
-- {insights[1]}
-- {insights[2]}
+- {insights[0]} är avgörande för framgång
+- {insights[1]} kan ge stora fördelar
+- {insights[2]} blir allt viktigare
 
 ## Slutsats
-Genom att implementera dessa strategier kan du förbättra din {topic.lower()}-strategi och uppnå bättre resultat.
+Genom att fokusera på dessa områden kan företag bättre förbereda sig för framtiden och uppnå hållbara resultat.
 
-{hashtags}"""
+{' '.join(base_hashtags)}"""
         
         try:
             system_prompt = config.prompts.get("writer_linkedin_system", "")
@@ -92,39 +97,52 @@ Genom att implementera dessa strategier kan du förbättra din {topic.lower()}-s
         if self.client == "mock_client":
             logger.info("Using mock OpenAI client - returning dummy personal post")
             
-            # Extract key topics from title for more relevant content
-            title_lower = article.title.lower()
-            if 'seo' in title_lower or 'search' in title_lower:
-                topic = "SEO"
-                question = "Vad är din bästa SEO-tips för 2024?"
-                hashtags = "#SEO #DigitalMarketing #Sökmotoroptimering"
-            elif 'ai' in title_lower or 'artificial' in title_lower:
-                topic = "AI"
-                question = "Hur använder du AI i ditt dagliga arbete?"
-                hashtags = "#AI #ArtificialIntelligence #Innovation"
-            elif 'analytics' in title_lower or 'data' in title_lower:
-                topic = "analys"
-                question = "Vilka KPI:er fokuserar du mest på?"
-                hashtags = "#Analytics #Data #Insights"
-            else:
-                topic = "digital marknadsföring"
-                question = "Vad är din bästa marknadsföringsstrategi?"
-                hashtags = "#DigitalMarketing #Strategy #Growth"
+            # Generate unique content based on article title hash
+            title_hash = hash(article.title) % 1000
             
-            return f"""Intressant läsning om {topic}! 📚
+            # Create unique questions and thoughts based on title hash
+            questions = [
+                "Vad är din bästa strategi för 2024?",
+                "Hur förbereder du dig för framtiden?",
+                "Vilka trender följer du mest?",
+                "Vad är din största utmaning just nu?",
+                "Hur mäter du framgång?"
+            ]
+            
+            thoughts = [
+                ["Framtiden håller på att skrivas nu", "Anpassningsförmåga är nyckeln", "Kontinuerlig lärande ger fördelar"],
+                ["Innovation driver förändring", "Data styr besluten", "Kundupplevelse är avgörande"],
+                ["Teknologi förändrar allt", "Automatisering frigör tid", "Kreativitet blir viktigare"],
+                ["Marknaden förändras snabbt", "Konkurrensen ökar", "Kvalitet slår kvantitet"],
+                ["Samarbete ger bästa resultat", "Transparens bygger förtroende", "Fokus på värde skapar framgång"]
+            ]
+            
+            question = questions[title_hash % len(questions)]
+            selected_thoughts = thoughts[title_hash % len(thoughts)]
+            
+            # Generate unique hashtags based on title
+            base_hashtags = ["#DigitalMarketing", "#Innovation", "#Strategy"]
+            if any(word.lower() in article.title.lower() for word in ['seo', 'search']):
+                base_hashtags = ["#SEO", "#Sökmotoroptimering", "#DigitalMarketing"]
+            elif any(word.lower() in article.title.lower() for word in ['ai', 'artificial']):
+                base_hashtags = ["#AI", "#ArtificialIntelligence", "#Innovation"]
+            elif any(word.lower() in article.title.lower() for word in ['analytics', 'data']):
+                base_hashtags = ["#Analytics", "#Data", "#Insights"]
+            
+            return f"""Intressant läsning! 📚
 
-Jag läste precis "{article.title}" och det fick mig att tänka på hur snabbt området utvecklas.
+Jag läste precis "{article.title}" och det fick mig att reflektera över dagens utmaningar.
 
-Det som verkligen fångade min uppmärksamhet var hur viktigt det är att hålla sig uppdaterad inom {topic}. Marknaden förändras konstant och vi måste anpassa oss.
+Det som verkligen fångade min uppmärksamhet var hur snabbt allt förändras. Vi lever i en tid där anpassningsförmåga är avgörande för framgång.
 
 Några tankar som kom upp:
-✅ Framtiden håller på att skrivas nu
-✅ Anpassningsförmåga är nyckeln till framgång
-✅ Kontinuerlig lärande ger konkurrensfördelar
+✅ {selected_thoughts[0]}
+✅ {selected_thoughts[1]}
+✅ {selected_thoughts[2]}
 
 {question} 💭
 
-{hashtags}"""
+{' '.join(base_hashtags)}"""
         
         try:
             system_prompt = config.prompts.get("writer_personal_system", "")
@@ -149,45 +167,63 @@ Några tankar som kom upp:
         if self.client == "mock_client":
             logger.info("Using mock OpenAI client - returning dummy blog post")
             
-            # Extract key topics from title for more relevant content
-            title_lower = article.title.lower()
-            if 'seo' in title_lower or 'search' in title_lower:
-                topic = "SEO"
-                focus = "sökmotoroptimering"
-                tips = ["Teknisk SEO-granskning", "Innehållsoptimering", "Länkbyggnad"]
-                tags = "SEO, Sökmotoroptimering, Digital Marketing"
-            elif 'ai' in title_lower or 'artificial' in title_lower:
-                topic = "AI"
-                focus = "artificiell intelligens"
-                tips = ["AI-integration i arbetsflöden", "Automatisering av rutiner", "Framtida AI-trender"]
-                tags = "AI, Artificial Intelligence, Innovation"
-            elif 'analytics' in title_lower or 'data' in title_lower:
-                topic = "Analys"
-                focus = "dataanalys"
-                tips = ["KPI-mätning", "Användaranalys", "Datadriven beslutsfattande"]
-                tags = "Analytics, Data, Insights"
-            else:
-                topic = "Digital marknadsföring"
-                focus = "digital marknadsföring"
-                tips = ["Strategisk planering", "Kundengagemang", "Konverteringsoptimering"]
-                tags = "Digital Marketing, Strategy, Growth"
+            # Generate unique content based on article title hash
+            title_hash = hash(article.title) % 1000
+            
+            # Create unique content variations based on title hash
+            intro_templates = [
+                "Denna artikel belyser viktiga trender som påverkar dagens digitala landskap.",
+                "Vi ser tydliga tecken på att marknaden genomgår en transformation.",
+                "Denna utveckling skapar både möjligheter och utmaningar för företag.",
+                "Framtiden håller på att skrivas nu och det är viktigt att förstå trenderna.",
+                "Genom att analysera dessa förändringar kan vi bättre förbereda oss."
+            ]
+            
+            tip_templates = [
+                ["Strategisk planering", "Kundengagemang", "Konverteringsoptimering"],
+                ["Teknisk optimering", "Innehållsstrategi", "Performance-mätning"],
+                ["AI-integration", "Automatisering", "Datadriven analys"],
+                ["Brand building", "Content marketing", "Digital transformation"],
+                ["SEO-förbättringar", "Användarupplevelse", "Marknadsföringsstrategi"]
+            ]
+            
+            conclusion_templates = [
+                "Genom att förstå dessa trender kan företag bättre förbereda sig för framtiden.",
+                "Detta skapar möjligheter för företag som vill förbättra sin digitala närvaro.",
+                "Framtiden håller på att skrivas nu och det är viktigt att vara förberedd.",
+                "Genom att implementera dessa strategier kan företag uppnå hållbara resultat.",
+                "Detta ger oss viktiga insikter om hur marknaden förändras."
+            ]
+            
+            intro = intro_templates[title_hash % len(intro_templates)]
+            tips = tip_templates[title_hash % len(tip_templates)]
+            conclusion = conclusion_templates[title_hash % len(conclusion_templates)]
+            
+            # Generate unique hashtags based on title
+            base_tags = "Digital Marketing, Strategy, Innovation"
+            if any(word.lower() in article.title.lower() for word in ['seo', 'search']):
+                base_tags = "SEO, Sökmotoroptimering, Digital Marketing"
+            elif any(word.lower() in article.title.lower() for word in ['ai', 'artificial']):
+                base_tags = "AI, Artificial Intelligence, Innovation"
+            elif any(word.lower() in article.title.lower() for word in ['analytics', 'data']):
+                base_tags = "Analytics, Data, Insights"
             
             return f"""# {article.title}
 
 ## Introduktion
 
-{article.title} belyser viktiga trender inom {focus}. Denna artikel ger djupgående insikter om hur {topic.lower()} påverkar dagens digitala landskap och vad det betyder för framtiden.
+{article.title} ger oss djupgående insikter om dagens digitala utmaningar. {intro}
 
 ## Huvudpoäng
 
 ### 1. Aktuell marknadssituation
-Baserat på artikeln "{article.title}" ser vi tydliga tecken på att {focus} genomgår en transformation. Detta skapar både möjligheter och utmaningar för företag.
+Baserat på artikeln "{article.title}" ser vi tydliga tecken på att marknaden förändras snabbt. Detta skapar både möjligheter och utmaningar för företag som vill förbättra sin digitala närvaro.
 
 ### 2. Praktiska tillämpningar
-Artikeln visar konkreta exempel på hur {topic.lower()} kan implementeras i verkliga scenarion. Detta ger värdefulla insikter för praktisk tillämpning.
+Artikeln visar konkreta exempel på hur dessa trender kan implementeras i verkliga scenarion. Detta ger värdefulla insikter för praktisk tillämpning och strategisk planering.
 
 ### 3. Framtida utveckling
-Trenderna pekar på en fortsatt utveckling inom {focus}, vilket kräver att företag förbereder sig för kommande förändringar.
+Trenderna pekar på en fortsatt utveckling inom digital marknadsföring, vilket kräver att företag förbereder sig för kommande förändringar och utmaningar.
 
 ## Praktiska tips
 
@@ -197,13 +233,13 @@ Trenderna pekar på en fortsatt utveckling inom {focus}, vilket kräver att för
 
 ## Slutsats
 
-{article.title} ger oss viktiga insikter om {focus} och dess påverkan på framtiden. Genom att förstå dessa trender kan företag bättre förbereda sig för kommande utmaningar och möjligheter.
+{article.title} ger oss viktiga insikter om dagens digitala landskap. {conclusion}
 
-*Läs mer om {topic.lower()} i den ursprungliga artikeln: {article.url}*
+*Läs mer i den ursprungliga artikeln: {article.url}*
 
 ---
 
-**Taggar:** {tags}"""
+**Taggar:** {base_tags}"""
         
         try:
             system_prompt = config.prompts.get("writer_blog_system", "")
