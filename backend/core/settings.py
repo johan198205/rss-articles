@@ -36,6 +36,8 @@ class Settings:
             self.openai_api_key = value
         elif key == "notion":
             self.notion_api_key = value
+        elif key == "notion_database_id":
+            self.notion_database_id = value
         else:
             raise ValueError(f"Unknown secret key: {key}")
     
@@ -46,6 +48,8 @@ class Settings:
             "openai_last4": self.openai_api_key[-4:] if self.openai_api_key else None,
             "notion_set": bool(self.notion_api_key),
             "notion_last4": self.notion_api_key[-4:] if self.notion_api_key else None,
+            "notion_database_id_set": bool(self.notion_database_id),
+            "notion_database_id_last4": self.notion_database_id[-4:] if self.notion_database_id else None,
         }
     
     def persist_secret(self, key: str, value: str):
@@ -67,6 +71,8 @@ class Settings:
             env_vars["OPENAI_API_KEY"] = value
         elif key == "notion":
             env_vars["NOTION_API_KEY"] = value
+        elif key == "notion_database_id":
+            env_vars["NOTION_DATABASE_ID"] = value
         
         # Write back to .env file
         with open(env_file, 'w') as f:

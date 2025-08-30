@@ -19,6 +19,7 @@ interface GlobalRules {
   max_age_days: number
   language: string
   source_weight: number
+  importance_threshold: number
 }
 
 interface GlobalRulesRaw {
@@ -29,6 +30,7 @@ interface GlobalRulesRaw {
   max_age_days: number
   language: string
   source_weight: number
+  importance_threshold: number
 }
 
 export default function FeedsPage() {
@@ -40,7 +42,8 @@ export default function FeedsPage() {
     min_words: 200,
     max_age_days: 10,
     language: '',
-    source_weight: 1.0
+    source_weight: 1.0,
+    importance_threshold: 3.0
   })
   const [globalRulesRaw, setGlobalRulesRaw] = useState<GlobalRulesRaw>({
     include_any: '',
@@ -49,7 +52,8 @@ export default function FeedsPage() {
     min_words: 200,
     max_age_days: 10,
     language: '',
-    source_weight: 1.0
+    source_weight: 1.0,
+    importance_threshold: 3.0
   })
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -104,7 +108,8 @@ export default function FeedsPage() {
         min_words: config.defaults.min_words || 200,
         max_age_days: config.defaults.max_age_days || 10,
         language: config.defaults.language || '',
-        source_weight: config.defaults.source_weight || 1.0
+        source_weight: config.defaults.source_weight || 1.0,
+        importance_threshold: config.threshold?.importance || 3.0
       }
       
       setGlobalRules(rules)
@@ -115,7 +120,8 @@ export default function FeedsPage() {
         min_words: rules.min_words,
         max_age_days: rules.max_age_days,
         language: rules.language,
-        source_weight: rules.source_weight
+        source_weight: rules.source_weight,
+        importance_threshold: rules.importance_threshold
       })
     } catch (error) {
       console.error('Failed to load global rules:', error)
@@ -180,7 +186,8 @@ export default function FeedsPage() {
         language: globalRules.language,
         include_any: globalRules.include_any.length > 0 ? globalRules.include_any.join(',') : '',
         include_all: globalRules.include_all.length > 0 ? globalRules.include_all.join(',') : '',
-        exclude_any: globalRules.exclude_any.length > 0 ? globalRules.exclude_any.join(',') : ''
+        exclude_any: globalRules.exclude_any.length > 0 ? globalRules.exclude_any.join(',') : '',
+        importance_threshold: globalRules.importance_threshold
       }
       
 
@@ -269,32 +276,44 @@ export default function FeedsPage() {
       </div>
 
       {/* Global Rules Section */}
-      <div className="mb-8 p-6 border rounded-lg bg-gray-50">
-        <h2 className="text-xl font-semibold mb-4">Globala regler (gäller alla feeds)</h2>
+      <div className="mb-8 p-6 border rounded-lg bg-blue-50 border-blue-200">
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="text-xl font-semibold">🌐 Globala regler</h2>
+          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Gäller alla feeds</span>
+        </div>
+        
+        <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-md">
+          <p className="text-sm text-blue-800">
+            <strong>💡 Vad är globala regler?</strong> Dessa regler tillämpas på ALLA feeds och artiklar. 
+            De fungerar som en extra filterlager ovanpå individuella feed-regler.
+          </p>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Min ord</label>
+            <label className="block text-sm font-medium mb-1">Min ord (global)</label>
             <input
               type="number"
               value={globalRules.min_words}
               onChange={(e) => updateGlobalRule('min_words', parseInt(e.target.value))}
               className="w-full p-2 border rounded"
             />
+            <p className="text-xs text-gray-600 mt-1">Filtrerar bort korta artiklar</p>
           </div>
           
           <div>
-            <label className="block text-sm font-medium mb-1">Max ålder (dagar)</label>
+            <label className="block text-sm font-medium mb-1">Max ålder (global)</label>
             <input
               type="number"
               value={globalRules.max_age_days}
               onChange={(e) => updateGlobalRule('max_age_days', parseInt(e.target.value))}
               className="w-full p-2 border rounded"
             />
+            <p className="text-xs text-gray-600 mt-1">Filtrerar bort gamla artiklar</p>
           </div>
           
           <div>
-            <label className="block text-sm font-medium mb-1">Språk</label>
+            <label className="block text-sm font-medium mb-1">Språk (global)</label>
             <input
               type="text"
               value={globalRules.language}
@@ -302,6 +321,7 @@ export default function FeedsPage() {
               className="w-full p-2 border rounded"
               placeholder="sv, en, eller tom"
             />
+            <p className="text-xs text-gray-600 mt-1">Filtrerar på språk</p>
           </div>
           
           <div>
@@ -315,6 +335,21 @@ export default function FeedsPage() {
               onChange={(e) => updateGlobalRule('source_weight', parseFloat(e.target.value))}
               className="w-full p-2 border rounded"
             />
+            <p className="text-xs text-gray-600 mt-1">Vikt för källan</p>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium mb-1">Vikt-tröskel (0.0-5.0)</label>
+            <input
+              type="number"
+              step="0.1"
+              min="0"
+              max="5"
+              value={globalRules.importance_threshold}
+              onChange={(e) => updateGlobalRule('importance_threshold', parseFloat(e.target.value))}
+              className="w-full p-2 border rounded"
+            />
+            <p className="text-xs text-gray-600 mt-1">Minsta vikt för att behålla artikel</p>
           </div>
         </div>
         
