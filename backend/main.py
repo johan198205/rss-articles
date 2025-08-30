@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import config, feeds, run, logs, secrets
+from routers import config, feeds, run, logs, secrets, status
 from core.logger import logger
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ app.include_router(feeds.router)
 app.include_router(run.router)
 app.include_router(logs.router)
 app.include_router(secrets.router)
+app.include_router(status.router)
 
 @app.get("/")
 async def root():

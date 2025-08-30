@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Play, Eye, EyeOff, ExternalLink } from 'lucide-react'
+import { Play, Eye, EyeOff, ExternalLink, FileText, Users, User } from 'lucide-react'
 
 interface RunResponse {
   kept_count: number
@@ -49,10 +49,13 @@ export default function Dashboard() {
   const [isRunning, setIsRunning] = useState(false)
   const [results, setResults] = useState<RunResponse | null>(null)
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
+  const [statusMessage, setStatusMessage] = useState('')
+  const [progress, setProgress] = useState<{current: number, total: number} | null>(null)
+  const [activeView, setActiveView] = useState<{[key: number]: 'original' | 'linkedin' | 'personal'}>({})
 
   useEffect(() => {
     // Load available feeds
-    fetch('/api/feeds/')
+    fetch('http://localhost:8000/api/feeds/')
       .then(res => res.json())
       .then(data => {
         setAvailableFeeds(data.map((feed: any) => ({
@@ -62,6 +65,48 @@ export default function Dashboard() {
       })
       .catch(console.error)
   }, [])
+
+  // Polling-based status updates
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
+    
+    if (isRunning) {
+      // Poll status every 2 seconds while running
+      interval = setInterval(async () => {
+        try {
+          const response = await fetch('http://localhost:8000/api/status/')
+          const status = await response.json()
+          
+          if (status.running) {
+            setStatusMessage(status.message)
+            
+            if (status.total_articles > 0) {
+              setProgress({
+                current: status.processed_articles || 0,
+                total: status.total_articles
+              })
+            }
+          } else {
+            // Pipeline completed
+            setStatusMessage('')
+            setProgress(null)
+            setIsRunning(false)
+          }
+        } catch (error) {
+          console.error('Error fetching status:', error)
+        }
+      }, 2000)
+    } else {
+      setStatusMessage('')
+      setProgress(null)
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval)
+      }
+    }
+  }, [isRunning])
 
   const runPipeline = async () => {
     setIsRunning(true)
@@ -73,7 +118,9 @@ export default function Dashboard() {
       if (limit) params.append('limit', limit.toString())
       selectedFeeds.forEach(feed => params.append('feeds', feed))
 
-      const response = await fetch(`/api/run/?${params}`)
+      const response = await fetch(`http://localhost:8000/api/run/?${params}`, {
+        method: 'POST'
+      })
       const data = await response.json()
       setResults(data)
     } catch (error) {
@@ -93,6 +140,14 @@ export default function Dashboard() {
     setExpandedItems(newExpanded)
   }
 
+  const setView = (index: number, view: 'original' | 'linkedin' | 'personal') => {
+    setActiveView(prev => ({ ...prev, [index]: view }))
+  }
+
+  const getCurrentView = (index: number): 'original' | 'linkedin' | 'personal' => {
+    return activeView[index] || 'original'
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -102,6 +157,34 @@ export default function Dashboard() {
           {isRunning ? 'Kör...' : 'Kör nu'}
         </Button>
       </div>
+
+      {/* Status Display */}
+      {isRunning && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium">{statusMessage}</span>
+              </div>
+              {progress && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Bearbetar artiklar</span>
+                    <span>{progress.current} / {progress.total}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Controls */}
       <Card>
@@ -156,7 +239,7 @@ export default function Dashboard() {
       </Card>
 
       {/* Results Summary */}
-      {results && (
+      {results && results.duration_seconds !== undefined && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
@@ -187,7 +270,7 @@ export default function Dashboard() {
               <CardTitle className="text-sm font-medium">Varaktighet</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{results.duration_seconds.toFixed(1)}s</div>
+              <div className="text-2xl font-bold">{results.duration_seconds?.toFixed(1) || '0.0'}s</div>
             </CardContent>
           </Card>
         </div>
@@ -252,25 +335,85 @@ export default function Dashboard() {
                     </Button>
                   </div>
                   
-                  {expandedItems.has(index) && (item.linkedin_article || item.personal_post) && (
+                  {expandedItems.has(index) && (
                     <div className="mt-4 space-y-4">
                       <Separator />
-                      {item.linkedin_article && (
-                        <div>
-                          <h4 className="font-medium mb-2">LinkedIn Artikel</h4>
-                          <div className="bg-muted p-3 rounded text-sm whitespace-pre-wrap">
-                            {item.linkedin_article}
+                      
+                      {/* View Selector */}
+                      <div className="flex gap-2">
+                        <Button
+                          variant={getCurrentView(index) === 'original' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setView(index, 'original')}
+                          className="flex items-center gap-2"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Original
+                        </Button>
+                        {item.linkedin_article && (
+                          <Button
+                            variant={getCurrentView(index) === 'linkedin' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setView(index, 'linkedin')}
+                            className="flex items-center gap-2"
+                          >
+                            <Users className="h-4 w-4" />
+                            LinkedIn Artikel
+                          </Button>
+                        )}
+                        {item.personal_post && (
+                          <Button
+                            variant={getCurrentView(index) === 'personal' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setView(index, 'personal')}
+                            className="flex items-center gap-2"
+                          >
+                            <User className="h-4 w-4" />
+                            Personligt Inlägg
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {/* Content Display */}
+                      <div className="bg-muted p-4 rounded text-sm whitespace-pre-wrap max-h-96 overflow-y-auto">
+                        {getCurrentView(index) === 'original' && (
+                          <div>
+                            <div className="mb-3">
+                              <strong>URL:</strong> <a href={item.article.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{item.article.url}</a>
+                            </div>
+                            {item.article.content ? (
+                              <div>
+                                <strong>Innehåll:</strong>
+                                <div className="mt-2">{item.article.content}</div>
+                              </div>
+                            ) : (
+                              <div className="text-gray-500 italic">Ingen fullständig text extraherad</div>
+                            )}
                           </div>
-                        </div>
-                      )}
-                      {item.personal_post && (
-                        <div>
-                          <h4 className="font-medium mb-2">Personligt Inlägg</h4>
-                          <div className="bg-muted p-3 rounded text-sm whitespace-pre-wrap">
-                            {item.personal_post}
+                        )}
+                        
+                        {getCurrentView(index) === 'linkedin' && item.linkedin_article && (
+                          <div>
+                            <div className="mb-2 text-blue-600 font-medium">📝 LinkedIn Artikel</div>
+                            <div>{item.linkedin_article}</div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                        
+                        {getCurrentView(index) === 'personal' && item.personal_post && (
+                          <div>
+                            <div className="mb-2 text-green-600 font-medium">👤 Personligt Inlägg</div>
+                            <div>{item.personal_post}</div>
+                          </div>
+                        )}
+                        
+                        {getCurrentView(index) === 'linkedin' && !item.linkedin_article && (
+                          <div className="text-gray-500 italic">Ingen LinkedIn artikel genererad</div>
+                        )}
+                        
+                        {getCurrentView(index) === 'personal' && !item.personal_post && (
+                          <div className="text-gray-500 italic">Inget personligt inlägg genererat</div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

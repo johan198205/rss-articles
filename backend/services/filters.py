@@ -47,10 +47,10 @@ class ArticleFilters:
             if self._matches_any(article, rule.exclude_any):
                 return False, f"Excluded by exclude_any: {rule.exclude_any}"
         
-        # Check language (if specified)
-        if rule.language:
-            if not self._check_language(article, rule.language):
-                return False, f"Language mismatch (expected: {rule.language})"
+        # Check language (if specified) - TEMPORARILY DISABLED FOR TESTING
+        # if rule.language:
+        #     if not self._check_language(article, rule.language):
+        #         return False, f"Language mismatch (expected: {rule.language})"
         
         return True, "Passed all filters"
     
