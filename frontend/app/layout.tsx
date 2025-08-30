@@ -28,7 +28,6 @@ export default function RootLayout({
                   <a href="/prompts" className="text-sm hover:underline">Prompts</a>
                   <a href="/settings" className="text-sm hover:underline">Inställningar</a>
                   <a href="/logs" className="text-sm hover:underline">Loggar</a>
-                  <a href="/secrets" className="text-sm hover:underline">Nycklar</a>
                 </div>
               </div>
             </div>
