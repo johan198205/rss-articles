@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+
+# Build outputs
+.next/
+.turbo/
+.vercel/
+dist/
+build/
+
+# Environment files
+.env
+**/.env
+frontend/.env.local
+frontend/.env.local.*
+backend/.env
+backend/.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime data
+data/
+logs/
+*.log
+
+# Temporary files
+*.tmp
+*.temp
