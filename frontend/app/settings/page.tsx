@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Save, CheckCircle, Key, TestTube, Eye, EyeOff, ChevronDown } from 'lucide-react'
+import { Save, CheckCircle, Key, TestTube, Eye, EyeOff, ChevronDown, ChevronUp, ExternalLink, Database, Settings } from 'lucide-react'
 
 interface Config {
   model: string
@@ -60,6 +60,7 @@ export default function SettingsPage() {
   const [secretStatus, setSecretStatus] = useState<SecretStatus | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [showNotionGuide, setShowNotionGuide] = useState(false)
   const [apiKeys, setApiKeys] = useState({
     openai: '',
     notion: '',
@@ -333,6 +334,148 @@ export default function SettingsPage() {
             )}
           </div>
         </CardContent>
+      </Card>
+
+      {/* Notion Configuration Guide */}
+      <Card>
+        <CardHeader>
+          <CardTitle 
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => setShowNotionGuide(!showNotionGuide)}
+          >
+            <div className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              📚 Steg-för-steg: Notion-konfiguration
+            </div>
+            {showNotionGuide ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </CardTitle>
+          <CardDescription>
+            Detaljerad guide för att konfigurera Notion API och databas
+          </CardDescription>
+        </CardHeader>
+        {showNotionGuide && (
+          <CardContent className="space-y-6">
+            {/* Step 1: Create Notion Integration */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
+                Skapa Notion Integration
+              </h3>
+              <div className="pl-8 space-y-2">
+                <p className="text-sm">
+                  1. Gå till <a href="https://www.notion.so/my-integrations" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1">
+                    Notion My Integrations <ExternalLink className="h-3 w-3" />
+                  </a>
+                </p>
+                <p className="text-sm">2. Klicka på <strong>"New integration"</strong></p>
+                <p className="text-sm">3. Ge den ett namn (t.ex. "RSS Articles")</p>
+                <p className="text-sm">4. Välj din workspace</p>
+                <p className="text-sm">5. Klicka <strong>"Submit"</strong></p>
+                <p className="text-sm">6. Kopiera <strong>"Internal Integration Token"</strong> (börjar med "secret_")</p>
+                <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-sm">
+                  ⚠️ <strong>Viktigt:</strong> Spara denna token säkert - den visas bara en gång!
+                </div>
+              </div>
+            </div>
+
+            {/* Step 2: Create Database */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">2</span>
+                Skapa Notion-databas
+              </h3>
+              <div className="pl-8 space-y-2">
+                <p className="text-sm">1. Skapa en ny sida i Notion</p>
+                <p className="text-sm">2. Lägg till en databas (Table)</p>
+                <p className="text-sm">3. Skapa följande kolumner:</p>
+                <div className="ml-4 bg-gray-50 p-3 rounded text-sm font-mono">
+                  <div><strong>Titel</strong> (Title) - Artikelns titel</div>
+                  <div><strong>Källa</strong> (Text) - RSS-feedens namn</div>
+                  <div><strong>URL</strong> (URL) - Länk till originalartikel</div>
+                  <div><strong>Publicerad</strong> (Date) - Publiceringsdatum</div>
+                  <div><strong>Vikt</strong> (Number) - AI-betyg (1-5)</div>
+                  <div><strong>LinkedIn-artikel</strong> (Text) - Genererad artikel</div>
+                  <div><strong>LinkedIn-post</strong> (Text) - Genererat inlägg</div>
+                  <div><strong>Status</strong> (Select) - Processed, Published, etc.</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3: Share Database */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">3</span>
+                Dela databas med integration
+              </h3>
+              <div className="pl-8 space-y-2">
+                <p className="text-sm">1. Klicka på <strong>"Share"</strong> i övre högra hörnet</p>
+                <p className="text-sm">2. Sök efter din integration (t.ex. "RSS Articles")</p>
+                <p className="text-sm">3. Klicka <strong>"Invite"</strong></p>
+                <div className="bg-red-50 border border-red-200 rounded p-2 text-sm">
+                  🚨 <strong>Kritiskt:</strong> Utan detta steg kan inte appen komma åt databasen!
+                </div>
+              </div>
+            </div>
+
+            {/* Step 4: Get Database ID */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <span className="bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">4</span>
+                Hitta Database ID
+              </h3>
+              <div className="pl-8 space-y-2">
+                <p className="text-sm">1. Kopiera URL:en till din databas</p>
+                <p className="text-sm">2. URL:en ser ut så här:</p>
+                <div className="bg-gray-100 p-2 rounded text-xs font-mono break-all">
+                  https://www.notion.so/workspace/DatabaseName-<span className="bg-yellow-200">a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6</span>?v=...
+                </div>
+                <p className="text-sm">3. Database ID är den <span className="bg-yellow-200 px-1">gul-markerade delen</span> (32 tecken)</p>
+                <p className="text-sm">4. Ta bort bindestreck om det finns några</p>
+                <div className="bg-green-50 border border-green-200 rounded p-2 text-sm">
+                  ✅ <strong>Exempel:</strong> a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6
+                </div>
+              </div>
+            </div>
+
+            {/* Step 5: Test Configuration */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <span className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">5</span>
+                Testa konfigurationen
+              </h3>
+              <div className="pl-8 space-y-2">
+                <p className="text-sm">1. Klistra in <strong>Notion API-nyckeln</strong> ovan och klicka "Spara"</p>
+                <p className="text-sm">2. Klistra in <strong>Database ID</strong> ovan och klicka "Spara"</p>
+                <p className="text-sm">3. Klicka <strong>"Testa"</strong> för båda för att verifiera anslutningen</p>
+                <div className="bg-blue-50 border border-blue-200 rounded p-2 text-sm">
+                  💡 <strong>Tips:</strong> Om testet misslyckas, kontrollera att du delat databasen med din integration!
+                </div>
+              </div>
+            </div>
+
+            {/* Troubleshooting */}
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Settings className="h-5 w-5 text-orange-500" />
+                Felsökning
+              </h3>
+              <div className="space-y-2 text-sm">
+                <div className="bg-red-50 border border-red-200 rounded p-2">
+                  <strong>❌ "API token is invalid"</strong><br/>
+                  Kontrollera att API-nyckeln börjar med "secret_" och är korrekt kopierad.
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded p-2">
+                  <strong>❌ "Object not found"</strong><br/>
+                  Database ID är fel eller databasen är inte delad med integrationen.
+                </div>
+                <div className="bg-red-50 border border-red-200 rounded p-2">
+                  <strong>❌ "Insufficient permissions"</strong><br/>
+                  Integrationen har inte rätt behörigheter. Dela databasen på nytt.
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       <Card>
