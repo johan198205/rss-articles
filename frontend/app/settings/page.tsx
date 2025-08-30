@@ -258,7 +258,7 @@ export default function SettingsPage() {
                 type={showKeys.notion ? "text" : "password"}
                 value={apiKeys.notion}
                 onChange={(e) => setApiKeys(prev => ({ ...prev, notion: e.target.value }))}
-                placeholder="secret_..."
+                placeholder="ntn_..."
                 className="flex-1"
               />
               <Button
@@ -371,7 +371,7 @@ export default function SettingsPage() {
                 <p className="text-sm">3. Ge den ett namn (t.ex. "RSS Articles")</p>
                 <p className="text-sm">4. Välj din workspace</p>
                 <p className="text-sm">5. Klicka <strong>"Submit"</strong></p>
-                <p className="text-sm">6. Kopiera <strong>"Internal Integration Token"</strong> (börjar med "secret_")</p>
+                <p className="text-sm">6. Kopiera <strong>"Internal Integration Token"</strong> (börjar med "ntn_")</p>
                 <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-sm">
                   ⚠️ <strong>Viktigt:</strong> Spara denna token säkert - den visas bara en gång!
                 </div>
@@ -462,7 +462,7 @@ export default function SettingsPage() {
               <div className="space-y-2 text-sm">
                 <div className="bg-red-50 border border-red-200 rounded p-2">
                   <strong>❌ "API token is invalid"</strong><br/>
-                  Kontrollera att API-nyckeln börjar med "secret_" och är korrekt kopierad.
+                  Kontrollera att API-nyckeln börjar med "ntn_" och är korrekt kopierad.
                 </div>
                 <div className="bg-red-50 border border-red-200 rounded p-2">
                   <strong>❌ "Object not found"</strong><br/>

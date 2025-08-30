@@ -96,6 +96,13 @@ async def _test_notion() -> SecretTestResponse:
     if not settings.notion_api_key:
         return SecretTestResponse(ok=False, message="Notion API key not set")
     
+    # Basic format validation for new Notion API key format
+    if not settings.notion_api_key.startswith("ntn_"):
+        return SecretTestResponse(ok=False, message="Invalid Notion API key format (should start with 'ntn_')")
+    
+    if len(settings.notion_api_key) < 20:
+        return SecretTestResponse(ok=False, message="Notion API key too short")
+    
     if not settings.notion_database_id:
         return SecretTestResponse(ok=False, message="Notion database ID not set")
     
