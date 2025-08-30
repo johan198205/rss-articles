@@ -3,8 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from .routers import config, feeds, run, logs, secrets
-from .core.logger import logger
+from routers import config, feeds, run, logs, secrets
+from core.logger import logger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

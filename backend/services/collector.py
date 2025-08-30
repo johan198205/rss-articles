@@ -8,7 +8,7 @@ from datetime import datetime
 import re
 from loguru import logger
 
-from ..core.models import Article, FeedRule
+from core.models import Article, FeedRule
 
 class RSSCollector:
     """Collects and extracts content from RSS feeds."""

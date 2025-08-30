@@ -5,8 +5,8 @@ from datetime import datetime
 import pytz
 from loguru import logger
 
-from ..core.models import Article, ScoreResult
-from ..core.settings import settings
+from core.models import Article, ScoreResult
+from core.settings import settings
 
 class NotionWriter:
     """Writes articles to Notion database."""

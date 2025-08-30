@@ -3,8 +3,8 @@ from fastapi import APIRouter, HTTPException
 from openai import OpenAI
 from notion_client import Client
 
-from ..core.models import SecretSetRequest, SecretTestRequest, SecretTestResponse
-from ..core.settings import settings
+from core.models import SecretSetRequest, SecretTestRequest, SecretTestResponse
+from core.settings import settings
 
 router = APIRouter(prefix="/api/secrets", tags=["secrets"])
 

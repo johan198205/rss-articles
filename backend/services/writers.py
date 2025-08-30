@@ -4,8 +4,8 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from openai import OpenAI
 from loguru import logger
 
-from ..core.models import Article
-from ..core.settings import settings
+from core.models import Article
+from core.settings import settings
 
 class ContentWriters:
     """Writers for LinkedIn content generation."""

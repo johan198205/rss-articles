@@ -5,8 +5,8 @@ import pandas as pd
 import io
 from typing import List
 
-from ..core.models import FeedRule
-from ..core.config_store import config_store
+from core.models import FeedRule
+from core.config_store import config_store
 
 router = APIRouter(prefix="/api/feeds", tags=["feeds"])
 

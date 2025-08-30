@@ -2,8 +2,8 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 
-from ..core.models import ConfigModel
-from ..core.config_store import config_store
+from core.models import ConfigModel
+from core.config_store import config_store
 
 router = APIRouter(prefix="/api/config", tags=["config"])
 

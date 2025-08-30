@@ -2,7 +2,7 @@
 import os
 import yaml
 from typing import Dict, Any
-from .models import ConfigModel, FeedRule
+from core.models import ConfigModel, FeedRule
 
 class ConfigStore:
     """Manages configuration storage in /data/config.yaml."""

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import re
 from loguru import logger
 
-from ..core.models import Article, FeedRule
+from core.models import Article, FeedRule
 
 class ArticleFilters:
     """Hard filters for article processing."""
