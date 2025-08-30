@@ -36,3 +36,4 @@ def setup_logger():
 
 # Initialize logger
 setup_logger()
+

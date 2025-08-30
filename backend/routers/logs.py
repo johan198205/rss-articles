@@ -57,3 +57,4 @@ async def get_logs_info():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get log info: {str(e)}")
+

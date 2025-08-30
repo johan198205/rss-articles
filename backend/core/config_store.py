@@ -82,6 +82,12 @@ class ConfigStore:
         if 'defaults' in kwargs:
             config.defaults.update(kwargs['defaults'])
         
+        # Handle individual default fields
+        default_fields = ['min_words', 'max_age_days', 'language', 'include_any', 'include_all', 'exclude_any']
+        for field in default_fields:
+            if field in kwargs:
+                config.defaults[field] = kwargs[field]
+        
         self.save(config)
 
 # Global config store instance

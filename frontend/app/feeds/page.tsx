@@ -21,12 +21,31 @@ interface GlobalRules {
   source_weight: number
 }
 
+interface GlobalRulesRaw {
+  include_any: string
+  include_all: string
+  exclude_any: string
+  min_words: number
+  max_age_days: number
+  language: string
+  source_weight: number
+}
+
 export default function FeedsPage() {
   const [feeds, setFeeds] = useState<FeedRule[]>([])
   const [globalRules, setGlobalRules] = useState<GlobalRules>({
     include_any: [],
     include_all: [],
     exclude_any: [],
+    min_words: 200,
+    max_age_days: 10,
+    language: '',
+    source_weight: 1.0
+  })
+  const [globalRulesRaw, setGlobalRulesRaw] = useState<GlobalRulesRaw>({
+    include_any: '',
+    include_all: '',
+    exclude_any: '',
     min_words: 200,
     max_age_days: 10,
     language: '',
@@ -44,6 +63,7 @@ export default function FeedsPage() {
     try {
       const response = await fetch('http://localhost:8000/api/feeds/')
       const data = await response.json()
+      
       // Extract only feed-specific data
       const feedData = data.map((feed: any) => ({
         feed_url: feed.feed_url,
@@ -63,14 +83,39 @@ export default function FeedsPage() {
     try {
       const response = await fetch('http://localhost:8000/api/config/')
       const config = await response.json()
-      setGlobalRules({
-        include_any: config.defaults.include_any || [],
-        include_all: config.defaults.include_all || [],
-        exclude_any: config.defaults.exclude_any || [],
+      
+      // Handle both array and string formats for backwards compatibility
+      const include_any = Array.isArray(config.defaults.include_any) 
+        ? config.defaults.include_any 
+        : (config.defaults.include_any || '').split(',').map(s => s.trim()).filter(Boolean)
+      
+      const include_all = Array.isArray(config.defaults.include_all) 
+        ? config.defaults.include_all 
+        : (config.defaults.include_all || '').split(',').map(s => s.trim()).filter(Boolean)
+      
+      const exclude_any = Array.isArray(config.defaults.exclude_any) 
+        ? config.defaults.exclude_any 
+        : (config.defaults.exclude_any || '').split(',').map(s => s.trim()).filter(Boolean)
+      
+      const rules = {
+        include_any,
+        include_all,
+        exclude_any,
         min_words: config.defaults.min_words || 200,
         max_age_days: config.defaults.max_age_days || 10,
         language: config.defaults.language || '',
         source_weight: config.defaults.source_weight || 1.0
+      }
+      
+      setGlobalRules(rules)
+      setGlobalRulesRaw({
+        include_any: rules.include_any.join(', '),
+        include_all: rules.include_all.join(', '),
+        exclude_any: rules.exclude_any.join(', '),
+        min_words: rules.min_words,
+        max_age_days: rules.max_age_days,
+        language: rules.language,
+        source_weight: rules.source_weight
       })
     } catch (error) {
       console.error('Failed to load global rules:', error)
@@ -116,49 +161,54 @@ export default function FeedsPage() {
     setGlobalRules({ ...globalRules, [field]: value })
   }
 
+  const updateGlobalRuleRaw = (field: keyof GlobalRulesRaw, value: any) => {
+    setGlobalRulesRaw({ ...globalRulesRaw, [field]: value })
+  }
+
+  const processCommaField = (field: 'include_any' | 'include_all' | 'exclude_any') => {
+    const rawValue = globalRulesRaw[field]
+    const processed = rawValue.split(',').map(s => s.trim()).filter(Boolean)
+    updateGlobalRule(field, processed)
+  }
+
   const saveAll = async () => {
     setIsLoading(true)
     try {
+      const globalRulesPayload = {
+        min_words: globalRules.min_words,
+        max_age_days: globalRules.max_age_days,
+        language: globalRules.language,
+        include_any: globalRules.include_any.length > 0 ? globalRules.include_any.join(',') : '',
+        include_all: globalRules.include_all.length > 0 ? globalRules.include_all.join(',') : '',
+        exclude_any: globalRules.exclude_any.length > 0 ? globalRules.exclude_any.join(',') : ''
+      }
+      
+
+      
       // First save global rules to config defaults
       const configResponse = await fetch('http://localhost:8000/api/config/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          min_words: globalRules.min_words,
-          max_age_days: globalRules.max_age_days,
-          language: globalRules.language,
-          include_any: globalRules.include_any.join(','),
-          include_all: globalRules.include_all.join(','),
-          exclude_any: globalRules.exclude_any.join(',')
-        }),
+        body: JSON.stringify(globalRulesPayload),
       })
 
       if (!configResponse.ok) {
-        throw new Error('Failed to save global rules')
+        const errorText = await configResponse.text()
+        throw new Error(`Failed to save global rules: ${errorText}`)
       }
 
-      // Then save feeds with global rules applied
-      const feedsWithRules = feeds.map(feed => ({
-        ...feed,
-        include_any: globalRules.include_any,
-        include_all: globalRules.include_all,
-        exclude_any: globalRules.exclude_any,
-        min_words: globalRules.min_words,
-        max_age_days: globalRules.max_age_days,
-        language: globalRules.language,
-        source_weight: globalRules.source_weight
-      }))
-
-      const feedsResponse = await fetch('http://localhost:8000/api/config/', {
+      // Then save feeds using the dedicated endpoint
+      const feedsResponse = await fetch('http://localhost:8000/api/feeds/', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ feeds: feedsWithRules }),
+        body: JSON.stringify(feeds),
       })
       
       if (feedsResponse.ok) {
         setMessage('✅ All settings saved successfully')
       } else {
-        setMessage('❌ Save failed')
+        const errorText = await feedsResponse.text()
+        setMessage(`❌ Save failed: ${errorText}`)
       }
     } catch (error) {
       setMessage(`❌ Save failed: ${error}`)
@@ -273,8 +323,9 @@ export default function FeedsPage() {
             <label className="block text-sm font-medium mb-1">Inkludera någon av (kommaseparerat)</label>
             <input
               type="text"
-              value={globalRules.include_any.join(', ')}
-              onChange={(e) => updateGlobalRule('include_any', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+              value={globalRulesRaw.include_any}
+              onChange={(e) => updateGlobalRuleRaw('include_any', e.target.value)}
+              onBlur={() => processCommaField('include_any')}
               className="w-full p-2 border rounded"
               placeholder="AI, machine learning"
             />
@@ -283,8 +334,9 @@ export default function FeedsPage() {
             <label className="block text-sm font-medium mb-1">Inkludera alla (kommaseparerat)</label>
             <input
               type="text"
-              value={globalRules.include_all.join(', ')}
-              onChange={(e) => updateGlobalRule('include_all', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+              value={globalRulesRaw.include_all}
+              onChange={(e) => updateGlobalRuleRaw('include_all', e.target.value)}
+              onBlur={() => processCommaField('include_all')}
               className="w-full p-2 border rounded"
               placeholder="artificial intelligence"
             />
@@ -293,8 +345,9 @@ export default function FeedsPage() {
             <label className="block text-sm font-medium mb-1">Exkludera någon av (kommaseparerat)</label>
             <input
               type="text"
-              value={globalRules.exclude_any.join(', ')}
-              onChange={(e) => updateGlobalRule('exclude_any', e.target.value.split(',').map(s => s.trim()).filter(Boolean))}
+              value={globalRulesRaw.exclude_any}
+              onChange={(e) => updateGlobalRuleRaw('exclude_any', e.target.value)}
+              onBlur={() => processCommaField('exclude_any')}
               className="w-full p-2 border rounded"
               placeholder="sponsor, advertisement"
             />

@@ -62,10 +62,13 @@ class ConfigModel(BaseModel):
     """Application configuration."""
     model: str = "gpt-4o-mini"
     threshold: Dict[str, float] = Field(default_factory=lambda: {"importance": 3.2})
-    defaults: Dict[str, Union[int, str]] = Field(default_factory=lambda: {
+    defaults: Dict[str, Union[int, str, List[str]]] = Field(default_factory=lambda: {
         "min_words": 200,
         "max_age_days": 10,
-        "language": ""
+        "language": "",
+        "include_any": [],
+        "include_all": [],
+        "exclude_any": []
     })
     feeds: List[FeedRule] = Field(default_factory=list)
     prompts: Dict[str, str] = Field(default_factory=lambda: {

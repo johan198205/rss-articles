@@ -58,6 +58,11 @@ async def upload_feeds_excel(file: UploadFile = File(...)):
         else:
             print("DEBUG: No 'source' column found after mapping")
         
+        if 'language' in df.columns:
+            print(f"DEBUG: Language column values: {df['language'].head().tolist()}")
+        else:
+            print("DEBUG: No 'language' column found after mapping")
+        
         # Validate required columns
         required_columns = ['feed_url', 'label']
         missing_columns = [col for col in required_columns if col not in df.columns]
@@ -162,6 +167,15 @@ async def export_feeds_excel():
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to export feeds: {str(e)}")
+
+@router.put("/")
+async def update_feeds(feeds: List[FeedRule]):
+    """Update all feeds."""
+    try:
+        config_store.update_feeds(feeds)
+        return {"message": f"Updated {len(feeds)} feeds successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update feeds: {str(e)}")
 
 @router.post("/validate")
 async def validate_feeds():
