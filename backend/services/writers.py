@@ -31,23 +31,43 @@ class ContentWriters:
         
         if self.client == "mock_client":
             logger.info("Using mock OpenAI client - returning dummy LinkedIn article")
+            
+            # Extract key topics from title for more relevant content
+            title_lower = article.title.lower()
+            if 'seo' in title_lower or 'search' in title_lower:
+                topic = "SEO"
+                insights = ["Sökoptimerad innehållsstrategi", "Teknisk SEO-förbättring", "Användarupplevelse och ranking"]
+                hashtags = "#SEO #DigitalMarketing #Sökmotoroptimering"
+            elif 'ai' in title_lower or 'artificial' in title_lower:
+                topic = "AI"
+                insights = ["AI-driven automatisering", "Maskininlärning för effektivitet", "Framtida AI-trender"]
+                hashtags = "#AI #ArtificialIntelligence #Innovation"
+            elif 'analytics' in title_lower or 'data' in title_lower:
+                topic = "Analys"
+                insights = ["Datadriven beslutsfattande", "KPI-mätning och optimering", "Insikter från användaranalys"]
+                hashtags = "#Analytics #Data #Insights"
+            else:
+                topic = "Digital marknadsföring"
+                insights = ["Strategisk marknadsföring", "Kundengagemang och konvertering", "Digital transformation"]
+                hashtags = "#DigitalMarketing #Strategy #Growth"
+            
             return f"""# {article.title}
 
 ## Inledning
-Detta är en mock-genererad LinkedIn-artikel baserad på artikeln "{article.title}".
+{article.title} belyser viktiga aspekter inom {topic.lower()}. Denna artikel ger praktiska insikter för att förbättra din digitala närvaro.
 
 ## Huvudinnehåll
-Artikeln handlar om viktiga insikter inom SEO och community-building. Den ger praktiska råd för att förbättra sin närvaro online.
+Baserat på artikeln "{article.title}" kan vi dra flera viktiga slutsatser om hur {topic.lower()} påverkar dagens digitala landskap.
 
 ## Viktiga insikter
-- Community-engagement är nyckeln till framgång
-- Bygg förtroende genom att hjälpa andra
-- Skapa värdefullt innehåll baserat på verkliga frågor
+- {insights[0]}
+- {insights[1]}
+- {insights[2]}
 
 ## Slutsats
-Genom att följa dessa principer kan du förbättra din SEO och bygga en starkare online-närvaro.
+Genom att implementera dessa strategier kan du förbättra din {topic.lower()}-strategi och uppnå bättre resultat.
 
-#SEO #CommunityBuilding #DigitalMarketing"""
+{hashtags}"""
         
         try:
             system_prompt = config.prompts.get("writer_linkedin_system", "")
@@ -71,18 +91,40 @@ Genom att följa dessa principer kan du förbättra din SEO och bygga en starkar
         
         if self.client == "mock_client":
             logger.info("Using mock OpenAI client - returning dummy personal post")
-            return f"""Vad händer när du bygger community istället för att bara marknadsföra? 🤔
+            
+            # Extract key topics from title for more relevant content
+            title_lower = article.title.lower()
+            if 'seo' in title_lower or 'search' in title_lower:
+                topic = "SEO"
+                question = "Vad är din bästa SEO-tips för 2024?"
+                hashtags = "#SEO #DigitalMarketing #Sökmotoroptimering"
+            elif 'ai' in title_lower or 'artificial' in title_lower:
+                topic = "AI"
+                question = "Hur använder du AI i ditt dagliga arbete?"
+                hashtags = "#AI #ArtificialIntelligence #Innovation"
+            elif 'analytics' in title_lower or 'data' in title_lower:
+                topic = "analys"
+                question = "Vilka KPI:er fokuserar du mest på?"
+                hashtags = "#Analytics #Data #Insights"
+            else:
+                topic = "digital marknadsföring"
+                question = "Vad är din bästa marknadsföringsstrategi?"
+                hashtags = "#DigitalMarketing #Strategy #Growth"
+            
+            return f"""Intressant läsning om {topic}! 📚
 
-Jag läste precis en intressant artikel om hur community-engagement kan förbättra din SEO. Det handlar inte om att sälja, utan om att hjälpa.
+Jag läste precis "{article.title}" och det fick mig att tänka på hur snabbt området utvecklas.
 
-När du engagerar dig i communities och ger värde först, bygger du förtroende. Detta leder till:
-✅ Starkare varumärke
-✅ Bättre innehåll baserat på verkliga frågor  
-✅ Naturliga länkar och rekommendationer
+Det som verkligen fångade min uppmärksamhet var hur viktigt det är att hålla sig uppdaterad inom {topic}. Marknaden förändras konstant och vi måste anpassa oss.
 
-Det är en långsiktig strategi som ger resultat. Vad tycker du - har du testat community-building för din SEO? 💭
+Några tankar som kom upp:
+✅ Framtiden håller på att skrivas nu
+✅ Anpassningsförmåga är nyckeln till framgång
+✅ Kontinuerlig lärande ger konkurrensfördelar
 
-#SEO #CommunityBuilding #DigitalMarketing"""
+{question} 💭
+
+{hashtags}"""
         
         try:
             system_prompt = config.prompts.get("writer_personal_system", "")
@@ -106,39 +148,62 @@ Det är en långsiktig strategi som ger resultat. Vad tycker du - har du testat 
         
         if self.client == "mock_client":
             logger.info("Using mock OpenAI client - returning dummy blog post")
+            
+            # Extract key topics from title for more relevant content
+            title_lower = article.title.lower()
+            if 'seo' in title_lower or 'search' in title_lower:
+                topic = "SEO"
+                focus = "sökmotoroptimering"
+                tips = ["Teknisk SEO-granskning", "Innehållsoptimering", "Länkbyggnad"]
+                tags = "SEO, Sökmotoroptimering, Digital Marketing"
+            elif 'ai' in title_lower or 'artificial' in title_lower:
+                topic = "AI"
+                focus = "artificiell intelligens"
+                tips = ["AI-integration i arbetsflöden", "Automatisering av rutiner", "Framtida AI-trender"]
+                tags = "AI, Artificial Intelligence, Innovation"
+            elif 'analytics' in title_lower or 'data' in title_lower:
+                topic = "Analys"
+                focus = "dataanalys"
+                tips = ["KPI-mätning", "Användaranalys", "Datadriven beslutsfattande"]
+                tags = "Analytics, Data, Insights"
+            else:
+                topic = "Digital marknadsföring"
+                focus = "digital marknadsföring"
+                tips = ["Strategisk planering", "Kundengagemang", "Konverteringsoptimering"]
+                tags = "Digital Marketing, Strategy, Growth"
+            
             return f"""# {article.title}
 
 ## Introduktion
 
-Community-building har blivit en av de mest kraftfulla strategierna för att förbättra SEO och bygga varumärke online. Denna artikel utforskar hur engagemang i communities kan ge långsiktiga fördelar för din digitala närvaro.
+{article.title} belyser viktiga trender inom {focus}. Denna artikel ger djupgående insikter om hur {topic.lower()} påverkar dagens digitala landskap och vad det betyder för framtiden.
 
 ## Huvudpoäng
 
-### 1. Bygg förtroende genom värde
-Istället för att fokusera på direkta försäljningsmeddelanden, bör du prioritera att hjälpa andra i dina communities. Detta bygger förtroende och positionerar dig som en expert inom ditt område.
+### 1. Aktuell marknadssituation
+Baserat på artikeln "{article.title}" ser vi tydliga tecken på att {focus} genomgår en transformation. Detta skapar både möjligheter och utmaningar för företag.
 
-### 2. Skapa innehåll baserat på verkliga frågor
-Genom att vara aktiv i communities får du insikt i vilka frågor och problem som verkligen engagerar din målgrupp. Använd denna information för att skapa relevant och värdefullt innehåll.
+### 2. Praktiska tillämpningar
+Artikeln visar konkreta exempel på hur {topic.lower()} kan implementeras i verkliga scenarion. Detta ger värdefulla insikter för praktisk tillämpning.
 
-### 3. Naturliga länkar och rekommendationer
-När du etablerat dig som en pålitlig resurs i communities, kommer andra naturligt att länka till ditt innehåll och rekommendera dina tjänster.
+### 3. Framtida utveckling
+Trenderna pekar på en fortsatt utveckling inom {focus}, vilket kräver att företag förbereder sig för kommande förändringar.
 
 ## Praktiska tips
 
-- **Engagera dig regelbundet**: Bli en aktiv deltagare, inte bara en observatör
-- **Ge mer än du tar**: Fokusera på att hjälpa andra först
-- **Var autentisk**: Dela din verkliga expertis och erfarenhet
-- **Följ upp**: Håll kontakten även efter initiala interaktioner
+- **{tips[0]}**: Implementera regelbundna granskningar för optimala resultat
+- **{tips[1]}**: Fokusera på användarupplevelse och relevant innehåll
+- **{tips[2]}**: Använd data för att fatta informerade beslut
 
 ## Slutsats
 
-Community-building är en långsiktig strategi som kräver tålamod och engagemang, men resultaten kan vara betydande. Genom att fokusera på att skapa värde för andra, bygger du inte bara din SEO utan också ett starkt varumärke och nätverk.
+{article.title} ger oss viktiga insikter om {focus} och dess påverkan på framtiden. Genom att förstå dessa trender kan företag bättre förbereda sig för kommande utmaningar och möjligheter.
 
-*Vill du läsa mer om community-building och SEO? Läs den ursprungliga artikeln här: {article.url}*
+*Läs mer om {topic.lower()} i den ursprungliga artikeln: {article.url}*
 
 ---
 
-**Taggar:** SEO, Community Building, Digital Marketing, Content Strategy"""
+**Taggar:** {tags}"""
         
         try:
             system_prompt = config.prompts.get("writer_blog_system", "")
